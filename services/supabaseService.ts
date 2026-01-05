@@ -196,7 +196,7 @@ export const supabaseService = {
 
   // Decks
   getDecks: async (userId?: string, publicOnly = false, search?: string): Promise<Deck[]> => {
-    let query = supabase.from(TABLES.DECKS).select('*');
+    let query = supabase.from(TABLES.DECKS).select('*, cards(count)');
 
     if (userId) {
       query = query.eq('owner_id', userId);
@@ -226,7 +226,7 @@ export const supabaseService = {
       createdAt: d.created_at,
       updatedAt: d.updated_at,
       tags: d.tags || [],
-      cardCount: d.card_count || 0,
+      cardCount: d.cards?.[0]?.count || 0,
       averageRating: d.average_rating || 0,
       ratingCount: d.rating_count || 0,
       lastSeen: d.last_seen,
@@ -236,7 +236,7 @@ export const supabaseService = {
   getDeckById: async (id: string): Promise<Deck | null> => {
     const { data, error } = await supabase
       .from(TABLES.DECKS)
-      .select('*')
+      .select('*, cards(count)')
       .eq('id', id)
       .single();
 
@@ -253,7 +253,7 @@ export const supabaseService = {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       tags: data.tags || [],
-      cardCount: data.card_count || 0,
+      cardCount: data.cards?.[0]?.count || 0,
       averageRating: data.average_rating || 0,
       ratingCount: data.rating_count || 0,
       lastSeen: data.last_seen,
@@ -371,8 +371,6 @@ export const supabaseService = {
       if (error) throw new Error(error.message);
     }
 
-    await supabaseService.updateDeck(newDeck.id, { cardCount: newCards.length });
-
     return newDeck;
   },
 
@@ -413,12 +411,6 @@ export const supabaseService = {
     if (error) throw new Error(error.message);
     if (!data) throw new Error('Failed to create card');
 
-    // Update deck card count
-    const deck = await supabaseService.getDeckById(cardData.deckId!);
-    if (deck) {
-      await supabaseService.updateDeck(cardData.deckId!, { cardCount: deck.cardCount + 1 });
-    }
-
     return {
       id: data.id,
       deckId: data.deck_id,
@@ -458,12 +450,6 @@ export const supabaseService = {
   deleteCard: async (id: string, deckId: string): Promise<void> => {
     const { error } = await supabase.from(TABLES.CARDS).delete().eq('id', id);
     if (error) throw new Error(error.message);
-
-    // Update deck card count
-    const deck = await supabaseService.getDeckById(deckId);
-    if (deck) {
-      await supabaseService.updateDeck(deckId, { cardCount: Math.max(0, deck.cardCount - 1) });
-    }
   },
 
   // Comments

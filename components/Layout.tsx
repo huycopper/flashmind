@@ -59,15 +59,28 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-sm text-warning hover:text-red-700 font-medium ml-2"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                   >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
                     Log Out
                   </button>
                 </div>
               ) : (
-                <div className="hidden md:flex space-x-4">
-                   <Link to="/login" className="text-primary font-medium hover:underline">Log In</Link>
-                   <Link to="/register" className="bg-primary text-white px-4 py-2 rounded-full hover:bg-blue-700 transition">Sign Up</Link>
+                <div className="hidden md:flex items-center gap-3">
+                   <Link 
+                     to="/login" 
+                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all duration-200"
+                   >
+                     Log In
+                   </Link>
+                   <Link 
+                     to="/register" 
+                     className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200"
+                   >
+                     Sign Up
+                   </Link>
                 </div>
               )}
 
@@ -102,16 +115,31 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   {user?.isAdmin && <NavLink to="/admin" label="Admin Panel" />}
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-warning hover:bg-gray-100"
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all"
                   >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
                     Log Out
                   </button>
                 </>
               ) : (
-                <>
-                  <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-textPrimary hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>Log In</Link>
-                  <Link to="/register" className="block px-3 py-2 rounded-md text-base font-medium text-primary hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>Sign Up</Link>
-                </>
+                <div className="space-y-2 px-3 py-2">
+                  <Link 
+                    to="/login" 
+                    className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all" 
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Log In
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="block w-full px-4 py-2.5 text-center text-sm font-medium text-white bg-gradient-to-r from-primary to-blue-600 rounded-lg shadow-md" 
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </div>
               )}
             </div>
           </div>

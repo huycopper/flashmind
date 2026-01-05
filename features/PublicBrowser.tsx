@@ -55,14 +55,33 @@ export const PublicCatalog: React.FC = () => {
         <p className="text-textSecondary">Discover and clone flashcard decks from the community.</p>
       </div>
 
-      <form onSubmit={handleSearch} className="max-w-lg mx-auto flex gap-2">
-        <Input 
-          placeholder="Search by title or tag..." 
-          value={search} 
-          onChange={e => setSearch(e.target.value)} 
-          className="flex-grow mb-0"
-        />
-        <Button type="submit">Search</Button>
+      <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+        <div className="relative flex items-center group">
+          {/* Search Icon */}
+          <div className="absolute left-4 text-gray-400 group-focus-within:text-primary transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          
+          {/* Input */}
+          <input
+            type="text"
+            placeholder="Search decks by title, description, or tag..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-32 py-4 text-base bg-white border-2 border-gray-200 rounded-full shadow-sm placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200"
+          />
+          
+          {/* Search Button */}
+          <button
+            type="submit"
+            className="absolute right-2 px-6 py-2.5 bg-primary text-white font-medium rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+          >
+            Search
+          </button>
+        </div>
+        
       </form>
 
       {loading ? (

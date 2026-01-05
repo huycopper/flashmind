@@ -66,6 +66,7 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -74,6 +75,19 @@ export const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -112,6 +126,15 @@ export const Register: React.FC = () => {
           value={password} 
           onChange={e => setPassword(e.target.value)} 
           required 
+          placeholder="At least 6 characters"
+        />
+        <Input 
+          label="Confirm Password" 
+          type="password" 
+          value={confirmPassword} 
+          onChange={e => setConfirmPassword(e.target.value)} 
+          required 
+          error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
         />
         <Button type="submit" className="w-full" isLoading={loading}>
           Sign Up

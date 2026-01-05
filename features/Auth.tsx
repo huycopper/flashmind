@@ -1,0 +1,93 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { mockBackend } from '../services/mockDataService';
+import { Button, Input, AlertBanner } from '../components/UI';
+import { Warning } from '../types';
+
+export const Login: React.FC = () => {
+  const [loginName, setLoginName] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const user = await mockBackend.login(loginName, password);
+      // Check for warnings
+      const warnings = await mockBackend.getWarnings(user.id);
+      login(user); // Auth context login
+      
+      // If user has warnings, maybe show them on dashboard, but for now we just log in
+      navigate('/dashboard', { state: { warnings } });
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto mt-10 bg-surface p-8 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-center mb-6">Log In to FlashMind</h2>
+      {error && <AlertBanner type="error" message={error} />}
+      <form onSubmit={handleSubmit}>
+        <Input label="Login Name" value={loginName} onChange={e => setLoginName(e.target.value)} required />
+        <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <Button type="submit" className="w-full" isLoading={loading}>Log In</Button>
+      </form>
+      <p className="mt-4 text-center text-sm text-textSecondary">
+        Don't have an account? <Link to="/register" className="text-primary hover:underline">Sign up</Link>
+      </p>
+      <div className="mt-4 text-xs text-center text-gray-400">
+        Demo accounts: admin/admin123, student/pass123
+      </div>
+    </div>
+  );
+};
+
+export const Register: React.FC = () => {
+  const [loginName, setLoginName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const user = await mockBackend.register(loginName, displayName, password);
+      login(user);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto mt-10 bg-surface p-8 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
+      {error && <AlertBanner type="error" message={error} />}
+      <form onSubmit={handleSubmit}>
+        <Input label="Display Name" value={displayName} onChange={e => setDisplayName(e.target.value)} required maxLength={40} />
+        <Input label="Login Name" value={loginName} onChange={e => setLoginName(e.target.value)} required />
+        <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <Button type="submit" className="w-full" isLoading={loading}>Sign Up</Button>
+      </form>
+      <p className="mt-4 text-center text-sm text-textSecondary">
+        Already have an account? <Link to="/login" className="text-primary hover:underline">Log in</Link>
+      </p>
+    </div>
+  );
+};

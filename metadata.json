@@ -1,0 +1,5 @@
+{
+  "name": "FlashMind",
+  "description": "An interactive flashcard platform with AI-assisted content generation, public deck sharing, and study tracking.",
+  "requestFramePermissions": []
+}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Deck, Card, Comment } from '../types';
-import { mockBackend } from '../services/mockDataService';
+import { supabaseService } from '../services/supabaseService';
 import { useAuth } from '../context/AuthContext';
-import { Button, Input, TextArea, AlertBanner } from '../components/UI';
+import { Button, Input, TextArea, AlertBanner, Avatar } from '../components/UI';
 
 // --- STAR RATING COMPONENT ---
 const StarRating: React.FC<{ value: number; onChange?: (val: number) => void; readonly?: boolean }> = ({ value, onChange, readonly }) => {
@@ -38,7 +38,7 @@ export const PublicCatalog: React.FC = () => {
 
   const fetchDecks = async (term = '') => {
     setLoading(true);
-    const data = await mockBackend.getDecks(undefined, true, term);
+    const data = await supabaseService.getDecks(undefined, true, term);
     setDecks(data);
     setLoading(false);
   };
@@ -72,21 +72,23 @@ export const PublicCatalog: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {decks.map(deck => (
-            <Link key={deck.id} to={`/public/${deck.id}`} className="block">
-              <div className="bg-surface rounded-lg shadow hover:shadow-lg transition-all p-5 border border-gray-100 h-full flex flex-col">
-                <h3 className="text-lg font-bold text-textPrimary truncate">{deck.title}</h3>
-                <p className="text-xs text-textSecondary mb-2">by {deck.ownerName}</p>
-                <div className="flex items-center mb-3 space-x-2">
-                   <StarRating value={Math.round(deck.averageRating)} readonly />
-                   <span className="text-xs text-gray-500">({deck.ratingCount})</span>
-                </div>
-                <p className="text-sm text-textSecondary line-clamp-3 mb-4">{deck.description}</p>
-                <div className="mt-auto flex justify-between items-center pt-3 border-t border-gray-50">
-                   <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded">{deck.cardCount} cards</span>
-                   <span className="text-xs text-primary font-medium group-hover:underline">View Deck &rarr;</span>
-                </div>
+            <div key={deck.id} className="bg-surface rounded-lg shadow hover:shadow-lg transition-all p-5 border border-gray-100 h-full flex flex-col relative">
+              <Link to={`/public/${deck.id}`}>
+                  <h3 className="text-lg font-bold text-textPrimary truncate mb-1">{deck.title}</h3>
+              </Link>
+              <div className="mb-2 text-xs text-textSecondary flex items-center gap-1 z-10">
+                by <Link to={`/profile/${deck.ownerId}`} className="font-medium text-primary hover:underline">{deck.ownerName}</Link>
               </div>
-            </Link>
+              <div className="flex items-center mb-3 space-x-2">
+                  <StarRating value={Math.round(deck.averageRating)} readonly />
+                  <span className="text-xs text-gray-500">({deck.ratingCount})</span>
+              </div>
+              <p className="text-sm text-textSecondary line-clamp-3 mb-4">{deck.description}</p>
+              <div className="mt-auto flex justify-between items-center pt-3 border-t border-gray-50">
+                  <span className="text-xs font-semibold bg-gray-100 px-2 py-1 rounded">{deck.cardCount} cards</span>
+                  <Link to={`/public/${deck.id}`} className="text-xs text-primary font-medium hover:underline">View Deck &rarr;</Link>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -108,17 +110,17 @@ export const DeckDetail: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      mockBackend.getDeckById(id).then(d => {
+      supabaseService.getDeckById(id).then(d => {
         if (!d || (!d.isPublic && d.ownerId !== user?.id && !user?.isAdmin)) {
              navigate('/public');
              return;
         }
         setDeck(d);
       });
-      mockBackend.getCards(id).then(setCards);
-      mockBackend.getComments(id).then(setComments);
+      supabaseService.getCards(id).then(setCards);
+      supabaseService.getComments(id).then(setComments);
       if (user) {
-        mockBackend.getUserRating(id, user.id).then(setUserRating);
+        supabaseService.getUserRating(id, user.id).then(setUserRating);
       }
     }
   }, [id, user, navigate]);
@@ -127,7 +129,7 @@ export const DeckDetail: React.FC = () => {
     if (!user || !deck) return;
     if (confirm(`Clone "${deck.title}" to your library?`)) {
       try {
-        await mockBackend.cloneDeck(deck.id, user.id, user.displayName);
+        await supabaseService.cloneDeck(deck.id, user.id, user.displayName);
         alert('Deck cloned successfully! Check your dashboard.');
         navigate('/dashboard');
       } catch (e) {
@@ -139,16 +141,16 @@ export const DeckDetail: React.FC = () => {
   const handleRate = async (val: number) => {
     if (!user || !deck) return;
     setUserRating(val);
-    await mockBackend.rateDeck(deck.id, user.id, val);
+    await supabaseService.rateDeck(deck.id, user.id, val);
     // Refresh deck stats
-    mockBackend.getDeckById(deck.id).then(d => d && setDeck(d));
+    supabaseService.getDeckById(deck.id).then(d => d && setDeck(d));
   };
 
   const handlePostComment = async () => {
     if (!user || !deck || !newComment.trim()) return;
-    await mockBackend.postComment(deck.id, user.id, user.displayName, newComment);
+    await supabaseService.postComment(deck.id, user.id, user.displayName, newComment);
     setNewComment('');
-    mockBackend.getComments(deck.id).then(setComments);
+    supabaseService.getComments(deck.id).then(setComments);
   };
 
   if (!deck) return <div className="text-center mt-10">Loading...</div>;
@@ -160,7 +162,9 @@ export const DeckDetail: React.FC = () => {
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
              <div>
                 <h1 className="text-3xl font-bold text-textPrimary">{deck.title}</h1>
-                <p className="text-textSecondary mt-1">Created by <span className="font-medium text-textPrimary">{deck.ownerName}</span></p>
+                <p className="text-textSecondary mt-1">
+                  Created by <Link to={`/profile/${deck.ownerId}`} className="font-medium text-primary hover:underline">{deck.ownerName}</Link>
+                </p>
                 <div className="flex items-center mt-3 gap-3">
                    <div className="flex items-center gap-1">
                       <StarRating value={userRating} onChange={handleRate} />
@@ -213,7 +217,9 @@ export const DeckDetail: React.FC = () => {
              {comments.map(c => (
                 <div key={c.id} className="bg-white p-3 rounded shadow-sm">
                    <div className="flex justify-between items-baseline mb-1">
-                      <span className="font-bold text-sm">{c.userName}</span>
+                      <div className="flex items-center gap-2">
+                        <Link to={`/profile/${c.userId}`} className="font-bold text-sm hover:underline text-primary">{c.userName}</Link>
+                      </div>
                       <span className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
                    </div>
                    <p className="text-sm text-gray-700">{c.content}</p>

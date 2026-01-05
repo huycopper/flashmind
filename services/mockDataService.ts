@@ -24,7 +24,8 @@ const seedData = () => {
       passwordHash: 'admin123',
       isAdmin: true,
       isLocked: false,
-      bio: 'I manage the platform.'
+      bio: 'I manage the platform.',
+      createdAt: new Date().toISOString()
     };
     const studentUser: User = {
       id: 'user-1',
@@ -33,7 +34,8 @@ const seedData = () => {
       passwordHash: 'pass123',
       isAdmin: false,
       isLocked: false,
-      bio: 'Learning history and science.'
+      bio: 'Learning history and science.',
+      createdAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([adminUser, studentUser]));
 
@@ -107,11 +109,47 @@ export const mockBackend = {
       displayName,
       passwordHash: password,
       isAdmin: false,
-      isLocked: false
+      isLocked: false,
+      createdAt: new Date().toISOString()
     };
     users.push(newUser);
     setItems(STORAGE_KEYS.USERS, users);
     return newUser;
+  },
+
+  getUserById: async (id: string): Promise<User | null> => {
+    await new Promise(r => setTimeout(r, 200));
+    const users = getItems<User>(STORAGE_KEYS.USERS);
+    return users.find(u => u.id === id) || null;
+  },
+
+  updateUserProfile: async (userId: string, updates: { displayName?: string; bio?: string }): Promise<User> => {
+    await new Promise(r => setTimeout(r, 300));
+    const users = getItems<User>(STORAGE_KEYS.USERS);
+    const index = users.findIndex(u => u.id === userId);
+    
+    if (index === -1) throw new Error('User not found');
+    
+    const updatedUser = { ...users[index], ...updates };
+    users[index] = updatedUser;
+    setItems(STORAGE_KEYS.USERS, users);
+    
+    // Also update denormalized names in decks/comments if necessary? 
+    // For a mock, we'll keep it simple, but strictly speaking we should update 'ownerName' in decks too.
+    if (updates.displayName) {
+        let decks = getItems<Deck>(STORAGE_KEYS.DECKS);
+        let decksChanged = false;
+        decks = decks.map(d => {
+            if (d.ownerId === userId) {
+                decksChanged = true;
+                return { ...d, ownerName: updates.displayName! };
+            }
+            return d;
+        });
+        if (decksChanged) setItems(STORAGE_KEYS.DECKS, decks);
+    }
+
+    return updatedUser;
   },
 
   // Decks
@@ -120,9 +158,7 @@ export const mockBackend = {
     let decks = getItems<Deck>(STORAGE_KEYS.DECKS);
     
     if (userId) {
-      decks = decks.filter(d => d.ownerId === userId && !d.isHiddenByAdmin); // Owner sees their decks (unless completely removed, but spec says 'Removed by Admin' note, handled in UI)
-      // Actually owner should see hidden decks too with a note.
-      decks = getItems<Deck>(STORAGE_KEYS.DECKS).filter(d => d.ownerId === userId);
+      decks = decks.filter(d => d.ownerId === userId && !d.isHiddenByAdmin); 
     } else if (publicOnly) {
       decks = decks.filter(d => d.isPublic && !d.isHiddenByAdmin);
     }

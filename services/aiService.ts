@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.GEMINI_API_KEY || ''; 
+const apiKey = process.env.API_KEY || ''; 
 // NOTE: in a real app, do not expose API_KEY in frontend unless strict restrictions are applied or using a proxy.
 // For this demo, we assume the environment variable is injected by the bundler/runtime.
 

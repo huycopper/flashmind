@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthState } from '../types';
-import { mockBackend } from '../services/mockDataService';
+import { supabase } from '../services/supabaseClient';
+import { supabaseService } from '../services/supabaseService';
 
 interface AuthContextType extends AuthState {
   login: (user: User) => void;
@@ -15,36 +16,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user: null,
     isAuthenticated: false,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check local storage for persisted session
-    const storedUser = localStorage.getItem('flashmind_session_user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        setState({ user, isAuthenticated: true });
-      } catch (e) {
-        console.error("Session parse error", e);
+    // Check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        try {
+          const user = await supabaseService.getCurrentUser();
+          if (user) {
+            setState({ user, isAuthenticated: true });
+          }
+        } catch (err) {
+          console.error('Error loading user:', err);
+        }
       }
-    }
+      setLoading(false);
+    }).catch(err => {
+      console.error('Session check error:', err);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        try {
+          const user = await supabaseService.getCurrentUser();
+          if (user) {
+            setState({ user, isAuthenticated: true });
+          }
+        } catch (err) {
+          console.error('Error on auth change:', err);
+        }
+      } else {
+        setState({ user: null, isAuthenticated: false });
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = (user: User) => {
-    localStorage.setItem('flashmind_session_user', JSON.stringify(user));
     setState({ user, isAuthenticated: true });
   };
 
-  const logout = () => {
-    localStorage.removeItem('flashmind_session_user');
+  const logout = async () => {
+    try {
+      await supabaseService.logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     setState({ user: null, isAuthenticated: false });
   };
 
-  const updateUser = (updates: Partial<User>) => {
-    if (state.user) {
-      const updatedUser = { ...state.user, ...updates };
-      login(updatedUser); // persist
+  const updateUser = async (updates: Partial<User>) => {
+    if (!state.user) return;
+    try {
+      const updatedUser = await supabaseService.updateUserProfile(state.user.id, {
+        displayName: updates.displayName,
+        bio: updates.bio,
+      });
+      setState({ user: updatedUser, isAuthenticated: true });
+    } catch (err) {
+      console.error('Update user error:', err);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-textSecondary">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
@@ -55,8 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };

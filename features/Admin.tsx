@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { User, Deck } from '../types';
-import { mockBackend } from '../services/mockDataService';
+import { supabaseService } from '../services/supabaseService';
+import { useAuth } from '../context/AuthContext';
 import { Button, AlertBanner, Input } from '../components/UI';
 
 export const AdminPanel: React.FC = () => {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [decks, setDecks] = useState<Deck[]>([]);
     const [warningMsg, setWarningMsg] = useState('');
@@ -14,27 +16,28 @@ export const AdminPanel: React.FC = () => {
     }, []);
 
     const loadData = async () => {
-        setUsers(await mockBackend.getUsers());
+        setUsers(await supabaseService.getUsers());
         // Get all decks including hidden ones
-        const allDecks = await mockBackend.getDecks(); // Returns all in mock implementation generally or filter needed
+        const allDecks = await supabaseService.getDecks(); // Returns all in mock implementation generally or filter needed
         // For mock, getDecks returns public usually. Let's assume we can fetch all for admin.
         // Re-using publicOnly=false
-        setDecks(await mockBackend.getDecks(undefined, false)); 
+        setDecks(await supabaseService.getDecks(undefined, false)); 
     };
 
     const toggleLock = async (u: User) => {
-        await mockBackend.updateUserLock(u.id, !u.isLocked);
+        await supabaseService.updateUserLock(u.id, !u.isLocked);
         loadData();
     };
 
     const toggleDeckHide = async (d: Deck) => {
-        await mockBackend.updateDeck(d.id, { isHiddenByAdmin: !d.isHiddenByAdmin });
+        await supabaseService.updateDeck(d.id, { isHiddenByAdmin: !d.isHiddenByAdmin });
         loadData();
     };
 
     const sendWarning = async () => {
         if (!selectedUser || !warningMsg) return;
-        await mockBackend.sendWarning(selectedUser, 'admin-1', warningMsg);
+        if (!currentUser) return;
+        await supabaseService.sendWarning(selectedUser, currentUser.id, warningMsg);
         alert('Warning sent');
         setWarningMsg('');
         setSelectedUser(null);

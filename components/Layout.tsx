@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Avatar } from './UI';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -52,10 +53,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <div className="flex items-center">
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center space-x-4">
-                  <span className="text-sm font-medium text-textPrimary">{user?.displayName}</span>
+                  <Link to={`/profile/${user?.id}`} className="flex items-center gap-2 group">
+                      <Avatar name={user?.displayName || ''} url={user?.profilePicture} size="sm" />
+                      <span className="text-sm font-medium text-textPrimary group-hover:text-primary transition-colors">{user?.displayName}</span>
+                  </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-sm text-warning hover:text-red-700 font-medium"
+                    className="text-sm text-warning hover:text-red-700 font-medium ml-2"
                   >
                     Log Out
                   </button>
@@ -94,6 +98,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <>
                   <NavLink to="/dashboard" label="My Decks" />
                   <NavLink to="/public" label="Public Catalog" />
+                  <NavLink to={`/profile/${user?.id}`} label="My Profile" />
                   {user?.isAdmin && <NavLink to="/admin" label="Admin Panel" />}
                   <button
                     onClick={handleLogout}

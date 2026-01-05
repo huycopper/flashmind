@@ -7,6 +7,7 @@ export interface User {
   isLocked: boolean;
   profilePicture?: string;
   bio?: string;
+  createdAt: string;
 }
 
 export interface Deck {

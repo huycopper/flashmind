@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Deck, Card } from '../types';
-import { mockBackend } from '../services/mockDataService';
+import { supabaseService } from '../services/supabaseService';
 import { useAuth } from '../context/AuthContext';
 import { Button, Input, TextArea, AlertBanner, Modal } from '../components/UI';
 import { aiService } from '../services/aiService';
@@ -14,13 +14,13 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      mockBackend.getDecks(user.id).then(setDecks);
-      mockBackend.getWarnings(user.id).then(setWarnings);
+      supabaseService.getDecks(user.id).then(setDecks);
+      supabaseService.getWarnings(user.id).then(setWarnings);
     }
   }, [user]);
 
   const handleDismissWarning = async (id: string) => {
-      await mockBackend.dismissWarning(id);
+      await supabaseService.dismissWarning(id);
       setWarnings(warnings.filter(w => w.id !== id));
   };
 
@@ -95,6 +95,7 @@ export const DeckEditor: React.FC = () => {
   const [deck, setDeck] = useState<Partial<Deck>>({ title: '', description: '', isPublic: false, tags: [] });
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Card Edit State
   const [editingCard, setEditingCard] = useState<Partial<Card> | null>(null);
@@ -110,7 +111,7 @@ export const DeckEditor: React.FC = () => {
 
   const loadDeckData = async (deckId: string) => {
     try {
-      const d = await mockBackend.getDeckById(deckId);
+      const d = await supabaseService.getDeckById(deckId);
       if (d) {
           if (d.ownerId !== user?.id) {
               alert("You cannot edit a deck you do not own.");
@@ -118,7 +119,7 @@ export const DeckEditor: React.FC = () => {
               return;
           }
           setDeck(d);
-          const c = await mockBackend.getCards(deckId);
+          const c = await supabaseService.getCards(deckId);
           setCards(c);
       }
     } catch (e) {
@@ -129,16 +130,19 @@ export const DeckEditor: React.FC = () => {
   const handleSaveDeck = async () => {
     if (!deck.title) return alert('Title is required');
     setLoading(true);
+    setError(null);
     try {
       if (isNew) {
-        const newDeck = await mockBackend.createDeck({ ...deck, ownerId: user!.id, ownerName: user!.displayName });
+        const newDeck = await supabaseService.createDeck({ ...deck, ownerId: user!.id, ownerName: user!.displayName });
         navigate(`/decks/${newDeck.id}/edit`, { replace: true });
       } else {
-        await mockBackend.updateDeck(id!, deck);
+        await supabaseService.updateDeck(id!, deck);
         alert('Deck saved successfully');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error('Save deck error:', e);
+      setError(e.message || 'Failed to save deck');
+      alert('Error: ' + (e.message || 'Failed to save deck'));
     } finally {
       setLoading(false);
     }
@@ -146,7 +150,7 @@ export const DeckEditor: React.FC = () => {
 
   const handleDeleteDeck = async () => {
     if (confirm('Are you sure? This will delete all cards and data.')) {
-        await mockBackend.deleteDeck(id!);
+        await supabaseService.deleteDeck(id!);
         navigate('/dashboard');
     }
   };
@@ -162,10 +166,10 @@ export const DeckEditor: React.FC = () => {
       if (!editingCard?.front || !editingCard?.back) return;
       try {
           if (editingCard.id) {
-             const updated = await mockBackend.updateCard(editingCard.id, editingCard);
+             const updated = await supabaseService.updateCard(editingCard.id, editingCard);
              setCards(cards.map(c => c.id === updated.id ? updated : c));
           } else {
-             const created = await mockBackend.createCard({ ...editingCard, deckId: isNew ? 'temp' : id! }); // Edge case for new deck
+             const created = await supabaseService.createCard({ ...editingCard, deckId: isNew ? 'temp' : id! }); // Edge case for new deck
              setCards([...cards, created]);
           }
           setIsCardModalOpen(false);
@@ -174,7 +178,7 @@ export const DeckEditor: React.FC = () => {
 
   const deleteCard = async (cardId: string) => {
       if(confirm('Delete card?')) {
-          await mockBackend.deleteCard(cardId, id!);
+          await supabaseService.deleteCard(cardId, id!);
           setCards(cards.filter(c => c.id !== cardId));
       }
   };
@@ -211,6 +215,7 @@ export const DeckEditor: React.FC = () => {
             <h2 className="text-xl font-bold">{isNew ? 'Create New Deck' : 'Edit Deck'}</h2>
             {!isNew && <Button variant="danger" onClick={handleDeleteDeck}>Delete Deck</Button>}
         </div>
+        {error && <AlertBanner type="error" message={error} />}
         <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input 

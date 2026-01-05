@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { mockBackend } from '../services/mockDataService';
+import { supabaseService } from '../services/supabaseService';
 import { Deck, Card } from '../types';
 import { Button } from '../components/UI';
 
@@ -14,8 +14,8 @@ export const StudySession: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      mockBackend.getDeckById(id).then(setDeck);
-      mockBackend.getCards(id).then(c => {
+      supabaseService.getDeckById(id).then(setDeck);
+      supabaseService.getCards(id).then(c => {
           setCards(c);
           if (c.length === 0) setIsFinished(true);
       });

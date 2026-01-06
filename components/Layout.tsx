@@ -2,12 +2,30 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar } from './UI';
+import { WarningBanner } from './WarningBanner';
+import { supabaseService } from '../services/supabaseService';
+import { Warning } from '../types';
+import { useEffect } from 'react';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      supabaseService.getWarnings(user.id).then(setWarnings);
+    } else {
+      setWarnings([]);
+    }
+  }, [user]);
+
+  const handleDismissWarning = async (id: string) => {
+    await supabaseService.dismissWarning(id);
+    setWarnings(prev => prev.filter(w => w.id !== id));
+  };
 
   const handleLogout = () => {
     logout();
@@ -19,11 +37,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return (
       <Link
         to={to}
-        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive
+        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
             ? 'bg-primary text-white'
             : 'text-textSecondary hover:text-textPrimary hover:bg-gray-100'
-        }`}
+          }`}
         onClick={() => setIsMenuOpen(false)}
       >
         {label}
@@ -49,13 +66,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center">
               {isAuthenticated ? (
                 <div className="hidden md:flex items-center space-x-4">
                   <Link to={`/profile/${user?.id}`} className="flex items-center gap-2 group">
-                      <Avatar name={user?.displayName || ''} url={user?.profilePicture} size="sm" />
-                      <span className="text-sm font-medium text-textPrimary group-hover:text-primary transition-colors">{user?.displayName}</span>
+                    <Avatar name={user?.displayName || ''} url={user?.profilePicture} size="sm" />
+                    <span className="text-sm font-medium text-textPrimary group-hover:text-primary transition-colors">{user?.displayName}</span>
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -69,18 +86,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                   <Link 
-                     to="/login" 
-                     className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all duration-200"
-                   >
-                     Log In
-                   </Link>
-                   <Link 
-                     to="/register" 
-                     className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200"
-                   >
-                     Sign Up
-                   </Link>
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all duration-200"
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    Sign Up
+                  </Link>
                 </div>
               )}
 
@@ -125,16 +142,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </>
               ) : (
                 <div className="space-y-2 px-3 py-2">
-                  <Link 
-                    to="/login" 
-                    className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all" 
+                  <Link
+                    to="/login"
+                    className="block w-full px-4 py-2.5 text-center text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Log In
                   </Link>
-                  <Link 
-                    to="/register" 
-                    className="block w-full px-4 py-2.5 text-center text-sm font-medium text-white bg-gradient-to-r from-primary to-blue-600 rounded-lg shadow-md" 
+                  <Link
+                    to="/register"
+                    className="block w-full px-4 py-2.5 text-center text-sm font-medium text-white bg-gradient-to-r from-primary to-blue-600 rounded-lg shadow-md"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Sign Up
@@ -148,6 +165,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       {/* Main Content */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {warnings.map(w => (
+          <WarningBanner
+            key={w.id}
+            warning={w}
+            onDismiss={() => handleDismissWarning(w.id)}
+          />
+        ))}
         {children}
       </main>
 

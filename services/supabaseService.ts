@@ -88,6 +88,11 @@ export const supabaseService = {
       return mapSupabaseUser({ ...insertedProfile, email });
     }
 
+    if (profile.is_locked) {
+      await supabase.auth.signOut();
+      throw new Error('Your account has been locked. Please contact support.');
+    }
+
     return mapSupabaseUser({ ...profile, email });
   },
 
@@ -195,7 +200,7 @@ export const supabaseService = {
   },
 
   // Decks
-  getDecks: async (userId?: string, publicOnly = false, search?: string): Promise<Deck[]> => {
+  getDecks: async (userId?: string, publicOnly = false, search?: string, includeHidden = false): Promise<Deck[]> => {
     let query = supabase.from(TABLES.DECKS).select('*, cards(count)');
 
     if (userId) {
@@ -204,7 +209,9 @@ export const supabaseService = {
       query = query.eq('is_public', true);
     }
 
-    query = query.eq('is_hidden_by_admin', false);
+    if (!includeHidden) {
+      query = query.eq('is_hidden_by_admin', false);
+    }
 
     if (search) {
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
@@ -305,6 +312,7 @@ export const supabaseService = {
     if (updates.title !== undefined) updateData.title = updates.title;
     if (updates.description !== undefined) updateData.description = updates.description;
     if (updates.isPublic !== undefined) updateData.is_public = updates.isPublic;
+    if (updates.isHiddenByAdmin !== undefined) updateData.is_hidden_by_admin = updates.isHiddenByAdmin;
     if (updates.tags !== undefined) updateData.tags = updates.tags;
     if (updates.cardCount !== undefined) updateData.card_count = updates.cardCount;
     if (updates.averageRating !== undefined) updateData.average_rating = updates.averageRating;
@@ -341,7 +349,7 @@ export const supabaseService = {
   deleteDeck: async (id: string): Promise<void> => {
     // Delete cards first (cascade)
     await supabase.from(TABLES.CARDS).delete().eq('deck_id', id);
-    
+
     // Delete deck
     const { error } = await supabase.from(TABLES.DECKS).delete().eq('id', id);
     if (error) throw new Error(error.message);
@@ -648,5 +656,47 @@ export const supabaseService = {
     } catch (err) {
       console.warn('Dismiss warning failed:', err);
     }
+  },
+
+  getAllDecksAdmin: async (): Promise<Deck[]> => {
+    return supabaseService.getDecks(undefined, true, undefined, true);
+  },
+
+  getAllCommentsAdmin: async (): Promise<Comment[]> => {
+    const { data, error } = await supabase
+      .from(TABLES.COMMENTS)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+    if (!data) return [];
+
+    return data.map((c: any) => ({
+      id: c.id,
+      deckId: c.deck_id,
+      userId: c.user_id,
+      userName: c.user_name,
+      content: c.content,
+      createdAt: c.created_at,
+      isHiddenByAdmin: c.is_hidden_by_admin,
+    }));
+  },
+
+  toggleCommentVisibility: async (commentId: string, isHidden: boolean): Promise<void> => {
+    const { error } = await supabase
+      .from(TABLES.COMMENTS)
+      .update({ is_hidden_by_admin: isHidden })
+      .eq('id', commentId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  deleteComment: async (commentId: string): Promise<void> => {
+    const { error } = await supabase
+      .from(TABLES.COMMENTS)
+      .delete()
+      .eq('id', commentId);
+
+    if (error) throw new Error(error.message);
   },
 };

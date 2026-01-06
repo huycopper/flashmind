@@ -108,7 +108,7 @@ class FlashMindService {
 
     if (profile.is_locked) {
       await this.client.auth.signOut();
-      throw new Error('Your account has been locked. Please contact support.');
+      throw new Error('Your account has been locked.');
     }
 
     return this.mapUser({ ...profile, email });
@@ -155,6 +155,8 @@ class FlashMindService {
       .single();
 
     if (!profile) return null;
+    if (profile.is_locked) return null;
+
     return this.mapUser(profile);
   }
 

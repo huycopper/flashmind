@@ -7,6 +7,7 @@ export interface User {
   isLocked: boolean;
   profilePicture?: string;
   bio?: string;
+  createdAt: string;
 }
 
 export interface Deck {
@@ -38,6 +39,7 @@ export interface Card {
 export interface Comment {
   id: string;
   deckId: string;
+  deckTitle?: string;
   userId: string;
   userName: string;
   content: string;

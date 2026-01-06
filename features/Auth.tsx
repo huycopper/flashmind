@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { mockBackend } from '../services/mockDataService';
+import { supabaseService } from '../services/supabaseService';
 import { Button, Input, AlertBanner } from '../components/UI';
-import { Warning } from '../types';
 
 export const Login: React.FC = () => {
-  const [loginName, setLoginName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,13 +16,13 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
-      const user = await mockBackend.login(loginName, password);
-      // Check for warnings
-      const warnings = await mockBackend.getWarnings(user.id);
-      login(user); // Auth context login
+      const user = await supabaseService.login(email, password);
+      login(user);
       
-      // If user has warnings, maybe show them on dashboard, but for now we just log in
+      // Fetch warnings separately (non-blocking)
+      const warnings = await supabaseService.getWarnings(user.id);
       navigate('/dashboard', { state: { warnings } });
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -37,24 +36,37 @@ export const Login: React.FC = () => {
       <h2 className="text-2xl font-bold text-center mb-6">Log In to FlashMind</h2>
       {error && <AlertBanner type="error" message={error} />}
       <form onSubmit={handleSubmit}>
-        <Input label="Login Name" value={loginName} onChange={e => setLoginName(e.target.value)} required />
-        <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        <Button type="submit" className="w-full" isLoading={loading}>Log In</Button>
+        <Input 
+          label="Email" 
+          type="email" 
+          value={email} 
+          onChange={e => setEmail(e.target.value)} 
+          required 
+        />
+        <Input 
+          label="Password" 
+          type="password" 
+          value={password} 
+          onChange={e => setPassword(e.target.value)} 
+          required 
+        />
+        <Button type="submit" className="w-full" isLoading={loading}>
+          Log In
+        </Button>
       </form>
       <p className="mt-4 text-center text-sm text-textSecondary">
-        Don't have an account? <Link to="/register" className="text-primary hover:underline">Sign up</Link>
+        Don't have an account?{' '}
+        <Link to="/register" className="text-primary hover:underline">Sign up</Link>
       </p>
-      <div className="mt-4 text-xs text-center text-gray-400">
-        Demo accounts: admin/admin123, student/pass123
-      </div>
     </div>
   );
 };
 
 export const Register: React.FC = () => {
-  const [loginName, setLoginName] = useState('');
+  const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -63,9 +75,23 @@ export const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
+
     try {
-      const user = await mockBackend.register(loginName, displayName, password);
+      const user = await supabaseService.register(email, displayName, password);
       login(user);
       navigate('/dashboard');
     } catch (err: any) {
@@ -80,13 +106,43 @@ export const Register: React.FC = () => {
       <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
       {error && <AlertBanner type="error" message={error} />}
       <form onSubmit={handleSubmit}>
-        <Input label="Display Name" value={displayName} onChange={e => setDisplayName(e.target.value)} required maxLength={40} />
-        <Input label="Login Name" value={loginName} onChange={e => setLoginName(e.target.value)} required />
-        <Input label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        <Button type="submit" className="w-full" isLoading={loading}>Sign Up</Button>
+        <Input 
+          label="Display Name" 
+          value={displayName} 
+          onChange={e => setDisplayName(e.target.value)} 
+          required 
+          maxLength={40} 
+        />
+        <Input 
+          label="Email" 
+          type="email" 
+          value={email} 
+          onChange={e => setEmail(e.target.value)} 
+          required 
+        />
+        <Input 
+          label="Password" 
+          type="password" 
+          value={password} 
+          onChange={e => setPassword(e.target.value)} 
+          required 
+          placeholder="At least 6 characters"
+        />
+        <Input 
+          label="Confirm Password" 
+          type="password" 
+          value={confirmPassword} 
+          onChange={e => setConfirmPassword(e.target.value)} 
+          required 
+          error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
+        />
+        <Button type="submit" className="w-full" isLoading={loading}>
+          Sign Up
+        </Button>
       </form>
       <p className="mt-4 text-center text-sm text-textSecondary">
-        Already have an account? <Link to="/login" className="text-primary hover:underline">Log in</Link>
+        Already have an account?{' '}
+        <Link to="/login" className="text-primary hover:underline">Log in</Link>
       </p>
     </div>
   );

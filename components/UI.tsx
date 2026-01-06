@@ -118,3 +118,40 @@ export const AlertBanner: React.FC<{ type: 'warning' | 'error' | 'success'; mess
         </div>
     );
 };
+
+// --- AVATAR ---
+interface AvatarProps {
+  url?: string;
+  name: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
+}
+
+export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'sm', className = '' }) => {
+  const sizeClasses = {
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-12 h-12 text-sm',
+    lg: 'w-24 h-24 text-3xl',
+    xl: 'w-32 h-32 text-4xl'
+  };
+  
+  const baseClass = `${sizeClasses[size]} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${className}`;
+
+  if (url) {
+    return <img src={url} alt={name} className={`${baseClass} object-cover bg-gray-200`} />;
+  }
+
+  // Generate a consistent color based on the name length
+  const colors = [
+    'bg-red-500', 'bg-yellow-500', 'bg-green-500', 
+    'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500'
+  ];
+  const colorIndex = name.length % colors.length;
+  const bgColor = colors[colorIndex];
+
+  return (
+    <div className={`${baseClass} ${bgColor} text-white`}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+};

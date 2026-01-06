@@ -6,9 +6,24 @@ import { Button, AlertBanner, Input } from '../components/UI';
 
 export const AdminPanel: React.FC = () => {
     const { user: currentUser } = useAuth();
+
+    // Data State
     const [users, setUsers] = useState<User[]>([]);
     const [decks, setDecks] = useState<Deck[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
+
+    // Search & Pagination State
+    const [userSearch, setUserSearch] = useState('');
+    const [deckSearch, setDeckSearch] = useState('');
+    const [commentSearch, setCommentSearch] = useState('');
+
+    const [userPage, setUserPage] = useState(1);
+    const [deckPage, setDeckPage] = useState(1);
+    const [commentPage, setCommentPage] = useState(1);
+
+    const ITEMS_PER_PAGE = 5;
+
+    // Warning State
     const [warningMsg, setWarningMsg] = useState('');
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
@@ -22,6 +37,7 @@ export const AdminPanel: React.FC = () => {
         setComments(await supabaseService.getAllCommentsAdmin());
     };
 
+    // --- Actions ---
     const toggleLock = async (u: User) => {
         await supabaseService.updateUserLock(u.id, !u.isLocked);
         loadData();
@@ -58,13 +74,58 @@ export const AdminPanel: React.FC = () => {
         loadData();
     };
 
+    // --- Helper for Filtering & Pagination ---
+    const getPaginatedData = <T,>(data: T[], searchQuery: string, page: number, searchKeys: (keyof T)[]) => {
+        const filtered = data.filter(item => {
+            const query = searchQuery.toLowerCase();
+            return searchKeys.some(key => {
+                const val = item[key];
+                return String(val).toLowerCase().includes(query);
+            });
+        });
+
+        const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
+        const currentData = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+        return { currentData, totalPages, totalItems: filtered.length };
+    };
+
+    // Derived Data
+    const { currentData: paginatedUsers, totalPages: userTotalPages } = getPaginatedData<User>(users, userSearch, userPage, ['displayName', 'loginName']);
+    const { currentData: paginatedDecks, totalPages: deckTotalPages } = getPaginatedData<Deck>(decks, deckSearch, deckPage, ['title', 'ownerName']);
+    const { currentData: paginatedComments, totalPages: commentTotalPages } = getPaginatedData<Comment>(comments, commentSearch, commentPage, ['content', 'userName', 'deckTitle']);
+
+    // --- Pagination Component ---
+    const PaginationControls: React.FC<{ page: number; totalPages: number; setPage: (p: number) => void }> = ({ page, totalPages, setPage }) => {
+        if (totalPages <= 1) return null;
+        return (
+            <div className="flex justify-between items-center mt-4 text-sm">
+                <span className="text-gray-500">Page {page} of {totalPages}</span>
+                <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => setPage(page - 1)} disabled={page === 1} className="py-1 px-3">Prev</Button>
+                    <Button variant="secondary" onClick={() => setPage(page + 1)} disabled={page === totalPages} className="py-1 px-3">Next</Button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold">Admin Panel</h1>
 
             {/* User Management */}
             <div className="bg-surface p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold mb-4">Users</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                    <h2 className="text-xl font-bold">Users</h2>
+                    <Input
+                        placeholder="Search users..."
+                        value={userSearch}
+                        onChange={e => { setUserSearch(e.target.value); setUserPage(1); }}
+                        className="mb-0 w-full sm:w-64"
+                    />
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                         <thead>
@@ -76,7 +137,7 @@ export const AdminPanel: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(u => (
+                            {paginatedUsers.length > 0 ? paginatedUsers.map(u => (
                                 <tr key={u.id} className="border-t">
                                     <td className="p-2">{u.displayName} {u.isAdmin && <span className="text-xs bg-purple-100 text-purple-800 px-1 rounded">Admin</span>}</td>
                                     <td className="p-2">{u.loginName}</td>
@@ -104,10 +165,13 @@ export const AdminPanel: React.FC = () => {
                                         )}
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr><td colSpan={4} className="p-4 text-center text-gray-500">No users found</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
+                <PaginationControls page={userPage} totalPages={userTotalPages} setPage={setUserPage} />
 
                 {selectedUser && (
                     <div className="mt-4 bg-gray-50 p-4 rounded border">
@@ -128,9 +192,18 @@ export const AdminPanel: React.FC = () => {
 
             {/* Deck Moderation */}
             <div className="bg-surface p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold mb-4">All Decks</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                    <h2 className="text-xl font-bold">All Decks</h2>
+                    <Input
+                        placeholder="Search decks..."
+                        value={deckSearch}
+                        onChange={e => { setDeckSearch(e.target.value); setDeckPage(1); }}
+                        className="mb-0 w-full sm:w-64"
+                    />
+                </div>
+
                 <div className="space-y-2">
-                    {decks.map(d => (
+                    {paginatedDecks.length > 0 ? paginatedDecks.map(d => (
                         <div key={d.id} className="flex justify-between items-center p-3 border rounded bg-white">
                             <div>
                                 <div>
@@ -160,18 +233,30 @@ export const AdminPanel: React.FC = () => {
                                 </Button>
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="text-center text-gray-500 py-4">No decks found</div>
+                    )}
                 </div>
+                <PaginationControls page={deckPage} totalPages={deckTotalPages} setPage={setDeckPage} />
             </div>
 
             {/* Comment Moderation */}
             <div className="bg-surface p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold mb-4">All Comments</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                    <h2 className="text-xl font-bold">All Comments</h2>
+                    <Input
+                        placeholder="Search comments..."
+                        value={commentSearch}
+                        onChange={e => { setCommentSearch(e.target.value); setCommentPage(1); }}
+                        className="mb-0 w-full sm:w-64"
+                    />
+                </div>
+
                 <div className="space-y-2">
-                    {comments.map(c => (
+                    {paginatedComments.length > 0 ? paginatedComments.map(c => (
                         <div key={c.id} className="flex justify-between items-start p-3 border rounded bg-white">
                             <div>
-                                <div className="text-sm font-bold">{c.userName} <span className="font-normal text-gray-500">on deck {c.deckId}</span></div>
+                                <div className="text-sm font-bold">{c.userName} <span className="font-normal text-gray-500">on deck {c.deckTitle}</span></div>
                                 <div className="text-gray-800 my-1">{c.content}</div>
                                 {c.isHiddenByAdmin && <span className="text-xs bg-red-100 text-red-800 px-1 rounded">Hidden</span>}
                             </div>
@@ -192,8 +277,11 @@ export const AdminPanel: React.FC = () => {
                                 </Button>
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="text-center text-gray-500 py-4">No comments found</div>
+                    )}
                 </div>
+                <PaginationControls page={commentPage} totalPages={commentTotalPages} setPage={setCommentPage} />
             </div>
         </div>
     );

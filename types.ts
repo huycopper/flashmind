@@ -39,6 +39,7 @@ export interface Card {
 export interface Comment {
   id: string;
   deckId: string;
+  deckTitle?: string;
   userId: string;
   userName: string;
   content: string;

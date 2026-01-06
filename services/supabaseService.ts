@@ -665,7 +665,7 @@ export const supabaseService = {
   getAllCommentsAdmin: async (): Promise<Comment[]> => {
     const { data, error } = await supabase
       .from(TABLES.COMMENTS)
-      .select('*')
+      .select('*, decks(title)')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -674,6 +674,7 @@ export const supabaseService = {
     return data.map((c: any) => ({
       id: c.id,
       deckId: c.deck_id,
+      deckTitle: c.decks?.title || 'Unknown Deck',
       userId: c.user_id,
       userName: c.user_name,
       content: c.content,

@@ -20,7 +20,7 @@ export const Login: React.FC = () => {
     try {
       const user = await supabaseService.login(email, password);
       login(user);
-      
+
       // Fetch warnings separately (non-blocking)
       const warnings = await supabaseService.getWarnings(user.id);
       navigate('/dashboard', { state: { warnings } });
@@ -36,19 +36,19 @@ export const Login: React.FC = () => {
       <h2 className="text-2xl font-bold text-center mb-6">Log In to FlashMind</h2>
       {error && <AlertBanner type="error" message={error} />}
       <form onSubmit={handleSubmit}>
-        <Input 
-          label="Email" 
-          type="email" 
-          value={email} 
-          onChange={e => setEmail(e.target.value)} 
-          required 
+        <Input
+          label="Email"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
         />
-        <Input 
-          label="Password" 
-          type="password" 
-          value={password} 
-          onChange={e => setPassword(e.target.value)} 
-          required 
+        <Input
+          label="Password"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
         />
         <Button type="submit" className="w-full" isLoading={loading}>
           Log In
@@ -68,6 +68,7 @@ export const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -75,6 +76,7 @@ export const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     // Validate password match
     if (password !== confirmPassword) {
@@ -91,13 +93,22 @@ export const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const user = await supabaseService.register(email, displayName, password);
+      const { user, requireEmailConfirmation } = await supabaseService.register(email, displayName, password);
+
+      if (requireEmailConfirmation) {
+        setSuccessMessage('Registration successful! Please check your email to confirm your account.');
+        setLoading(false);
+        return;
+      }
+
       login(user);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
-      setLoading(false);
+      if (!successMessage) {
+        setLoading(false);
+      }
     }
   };
 
@@ -105,41 +116,45 @@ export const Register: React.FC = () => {
     <div className="max-w-md mx-auto mt-10 bg-surface p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
       {error && <AlertBanner type="error" message={error} />}
-      <form onSubmit={handleSubmit}>
-        <Input 
-          label="Display Name" 
-          value={displayName} 
-          onChange={e => setDisplayName(e.target.value)} 
-          required 
-          maxLength={40} 
-        />
-        <Input 
-          label="Email" 
-          type="email" 
-          value={email} 
-          onChange={e => setEmail(e.target.value)} 
-          required 
-        />
-        <Input 
-          label="Password" 
-          type="password" 
-          value={password} 
-          onChange={e => setPassword(e.target.value)} 
-          required 
-          placeholder="At least 6 characters"
-        />
-        <Input 
-          label="Confirm Password" 
-          type="password" 
-          value={confirmPassword} 
-          onChange={e => setConfirmPassword(e.target.value)} 
-          required 
-          error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
-        />
-        <Button type="submit" className="w-full" isLoading={loading}>
-          Sign Up
-        </Button>
-      </form>
+      {successMessage && <AlertBanner type="success" message={successMessage} />}
+
+      {!successMessage && (
+        <form onSubmit={handleSubmit}>
+          <Input
+            label="Display Name"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            required
+            maxLength={40}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            placeholder="At least 6 characters"
+          />
+          <Input
+            label="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            required
+            error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
+          />
+          <Button type="submit" className="w-full" isLoading={loading}>
+            Sign Up
+          </Button>
+        </form>
+      )}
       <p className="mt-4 text-center text-sm text-textSecondary">
         Already have an account?{' '}
         <Link to="/login" className="text-primary hover:underline">Log in</Link>

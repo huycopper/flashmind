@@ -114,7 +114,7 @@ class FlashMindService {
     return this.mapUser({ ...profile, email });
   }
 
-  async register(email: string, displayName: string, password: string): Promise<User> {
+  async register(email: string, displayName: string, password: string): Promise<{ user: User; requireEmailConfirmation: boolean }> {
     const { data, error } = await this.client.auth.signUp({
       email,
       password,
@@ -126,7 +126,7 @@ class FlashMindService {
 
     // Profile creation is typically handled by trigger, but we handle manual insert in login if needed.
     // Here we return a preliminary user object.
-    return {
+    const user: User = {
       id: data.user.id,
       loginName: email.split('@')[0],
       displayName: displayName,
@@ -135,6 +135,8 @@ class FlashMindService {
       isLocked: false,
       createdAt: new Date().toISOString()
     };
+
+    return { user, requireEmailConfirmation: !data.session };
   }
 
   async logout(): Promise<void> {

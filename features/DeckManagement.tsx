@@ -160,7 +160,7 @@ export const DeckEditor: React.FC = () => {
 
   const deleteCard = async (cardId: string) => {
     if (confirm('Delete card?')) {
-      await supabaseService.deleteCard(cardId, id!);
+      await supabaseService.deleteCard(cardId);
       setCards(cards.filter(c => c.id !== cardId));
     }
   };

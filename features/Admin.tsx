@@ -117,7 +117,7 @@ export const AdminPanel: React.FC = () => {
 
             {/* Decks Table */}
             <DataTable<Deck>
-                title="All Decks"
+                title="Public Decks"
                 data={decks}
                 searchKeys={['title', 'ownerName']}
                 columns={[

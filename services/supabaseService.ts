@@ -230,8 +230,8 @@ class FlashMindService {
   }
 
   async getAllDecksAdmin(): Promise<Deck[]> {
-    // Reuse getDecks but include hidden
-    return this.getDecks(undefined, false, undefined, true);
+    // Reuse getDecks but include hidden, and ONLY public decks as requested
+    return this.getDecks(undefined, true, undefined, true);
   }
 
   async createDeck(deck: Partial<Deck>): Promise<Deck> {

@@ -19,6 +19,11 @@ export const supabase: SupabaseClient = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      storageKey: 'flashmind-auth-token',
+      // Detect session in other tabs - crucial for multi-tab support
+      detectSessionInUrl: true,
+      // Flow type for better session handling
+      flowType: 'pkce',
     }
   }
 );

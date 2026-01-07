@@ -19,41 +19,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        try {
-          const user = await supabaseService.getCurrentUser();
+    let isMounted = true;
+    let isLoadingUser = false; // Prevent duplicate calls
+
+    const loadUser = async () => {
+      if (isLoadingUser) return; // Skip if already loading
+      isLoadingUser = true;
+
+      try {
+        const user = await supabaseService.getCurrentUser();
+        if (isMounted) {
           if (user) {
             setState({ user, isAuthenticated: true });
+          } else {
+            setState({ user: null, isAuthenticated: false });
           }
-        } catch (err) {
-          console.error('Error loading user:', err);
+        }
+      } catch (err) {
+        console.error('Error loading user:', err);
+        if (isMounted) {
+          setState({ user: null, isAuthenticated: false });
+        }
+      } finally {
+        isLoadingUser = false;
+        if (isMounted) {
+          setLoading(false);
         }
       }
-      setLoading(false);
+    };
+
+    // Check existing session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUser();
+      } else {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     }).catch(err => {
       console.error('Session check error:', err);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        try {
-          const user = await supabaseService.getCurrentUser();
-          if (user) {
-            setState({ user, isAuthenticated: true });
-          }
-        } catch (err) {
-          console.error('Error on auth change:', err);
-        }
-      } else {
-        setState({ user: null, isAuthenticated: false });
+      if (isMounted) {
+        setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for auth changes - handle specific events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event); // Debug log
+
+      // Handle session initialization (important for new tabs)
+      if (event === 'INITIAL_SESSION') {
+        // This fires when the auth state is first determined
+        // Skip if we already have session loaded from getSession above
+        return;
+      }
+
+      // Handle sign in and token refresh
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user && !isLoadingUser) {
+          loadUser();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (isMounted) {
+          setState({ user: null, isAuthenticated: false });
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = (user: User) => {

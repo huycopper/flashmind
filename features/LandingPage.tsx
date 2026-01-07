@@ -23,7 +23,7 @@ export const LandingPage: React.FC = () => {
                             <span className="text-primary block mt-2">FlashMind AI</span>
                         </h1>
                         <p className="text-xl text-textSecondary max-w-2xl mx-auto">
-                            Create intelligent flashcards instantly using AI. Master any topic effectively with our smart study modes and progress tracking.
+                            Create intelligent flashcards instantly using AI. Share your decks with a global community and discover thousands of public learning resources.
                         </p>
                     </div>
 

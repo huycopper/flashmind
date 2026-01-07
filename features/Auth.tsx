@@ -25,7 +25,11 @@ export const Login: React.FC = () => {
       const warnings = await supabaseService.getWarnings(user.id);
       navigate('/dashboard', { state: { warnings } });
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      let message = err.message || 'Login failed';
+      if (message === 'Invalid login credentials') {
+        message = 'Incorrect password. Please try again.';
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }

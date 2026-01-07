@@ -335,9 +335,14 @@ class FlashMindService {
   }
 
   async updateCard(id: string, updates: Partial<Card>): Promise<Card> {
+    // Only include valid update fields with correct column names
+    const dbUpdates: any = { updated_at: new Date().toISOString() };
+    if (updates.front !== undefined) dbUpdates.front = updates.front;
+    if (updates.back !== undefined) dbUpdates.back = updates.back;
+
     const { data, error } = await this.client
       .from(TABLES.CARDS)
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();

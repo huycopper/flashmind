@@ -6,16 +6,16 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  isLoading, 
-  className = '', 
-  disabled, 
-  ...props 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  isLoading,
+  className = '',
+  disabled,
+  ...props
 }) => {
   const baseStyles = "inline-flex items-center justify-center px-4 py-2 border text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-  
+
   const variants = {
     primary: "border-transparent text-white bg-primary hover:bg-blue-700 focus:ring-primary",
     secondary: "border-gray-300 text-textPrimary bg-white hover:bg-gray-50 focus:ring-primary",
@@ -24,9 +24,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <button 
-      className={`${baseStyles} ${variants[variant]} ${className}`} 
-      disabled={isLoading || disabled} 
+    <button
+      className={`${baseStyles} ${variants[variant]} ${className}`}
+      disabled={isLoading || disabled}
       {...props}
     >
       {isLoading && (
@@ -83,7 +83,7 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 className="text-lg leading-6 font-medium text-textPrimary mb-4">{title}</h3>
             {children}
@@ -96,27 +96,27 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
 
 // --- ALERT BANNER ---
 export const AlertBanner: React.FC<{ type: 'warning' | 'error' | 'success'; message: string; onDismiss?: () => void }> = ({ type, message, onDismiss }) => {
-    const colors = {
-        warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
-        error: 'bg-red-50 text-red-800 border-red-200',
-        success: 'bg-green-50 text-green-800 border-green-200'
-    };
+  const colors = {
+    warning: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    error: 'bg-red-50 text-red-800 border-red-200',
+    success: 'bg-green-50 text-green-800 border-green-200'
+  };
 
-    return (
-        <div className={`p-4 rounded-md border ${colors[type]} mb-4 flex justify-between items-start`}>
-            <div className="flex">
-                <p className="text-sm font-medium">{message}</p>
-            </div>
-            {onDismiss && (
-                <button onClick={onDismiss} className="ml-auto pl-3">
-                     <span className="sr-only">Dismiss</span>
-                     <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                </button>
-            )}
-        </div>
-    );
+  return (
+    <div className={`p-4 rounded-md border ${colors[type]} mb-4 flex justify-between items-start`}>
+      <div className="flex">
+        <p className="text-sm font-medium">{message}</p>
+      </div>
+      {onDismiss && (
+        <button onClick={onDismiss} className="ml-auto pl-3">
+          <span className="sr-only">Dismiss</span>
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
 };
 
 // --- AVATAR ---
@@ -134,7 +134,7 @@ export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'sm', classNam
     lg: 'w-24 h-24 text-3xl',
     xl: 'w-32 h-32 text-4xl'
   };
-  
+
   const baseClass = `${sizeClasses[size]} rounded-full flex items-center justify-center font-bold flex-shrink-0 ${className}`;
 
   if (url) {
@@ -143,7 +143,7 @@ export const Avatar: React.FC<AvatarProps> = ({ url, name, size = 'sm', classNam
 
   // Generate a consistent color based on the name length
   const colors = [
-    'bg-red-500', 'bg-yellow-500', 'bg-green-500', 
+    'bg-red-500', 'bg-yellow-500', 'bg-green-500',
     'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500'
   ];
   const colorIndex = name.length % colors.length;

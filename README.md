@@ -2,7 +2,7 @@
 
 FlashMind is a modern, AI-powered flashcard application designed to help you learn faster and retain information longer. Built with React, TypeScript, and Supabase, it offers a seamless experience for creating, studying, and sharing flashcard decks.
 
-You can visit it on: https://www.flashmind.site/
+You can visit it on: https://www.flashmind.site/ or https://flashmind-phi.vercel.app/
 
 ### Tech Stack
 
